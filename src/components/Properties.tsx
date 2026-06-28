@@ -5,7 +5,6 @@ import {
   Plus,
   Search,
   Filter,
-  MoreVertical,
   Building2,
   MapPin,
   Bed,
@@ -16,7 +15,6 @@ import {
   Check,
   Trash2,
   Edit,
-  Eye,
   X,
   Loader2,
 } from 'lucide-react';
@@ -197,31 +195,34 @@ export function Properties() {
   async function generateDescription() {
     setGeneratingDescription(true);
     try {
+      const prompt = `You are an expert Nigerian real estate copywriter. Write a compelling, professional property description for a listing with the following details:
+      - Title: ${formData.title || 'New Property'}
+      - Type: ${formData.property_type}
+      - Location: ${formData.location || 'Prime Location'}, ${formData.city}, ${formData.state}
+      - Price: ₦${parseFloat(formData.price) || 0}
+      - Bedrooms: ${formData.bedrooms || 'N/A'}
+      - Bathrooms: ${formData.bathrooms || 'N/A'}
+      - Key Features: ${formData.features.join(', ') || 'Standard Amenities'}
+      
+      Make the tone inviting and professional. Format it with a short introductory paragraph followed by a clean bulleted list of key features. Keep it under 150 words.`;
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-description`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: formData.title || 'New Property',
-            property_type: formData.property_type,
-            location: formData.location || 'Prime Location',
-            city: formData.city,
-            state: formData.state,
-            price: parseFloat(formData.price) || 100000000,
-            bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : undefined,
-            bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : undefined,
-            parking_spaces: formData.parking_spaces ? parseInt(formData.parking_spaces) : undefined,
-            land_size_sqm: formData.land_size_sqm ? parseFloat(formData.land_size_sqm) : undefined,
-            built_area_sqm: formData.built_area_sqm ? parseFloat(formData.built_area_sqm) : undefined,
-            features: formData.features,
-          }),
+            contents: [{ parts: [{ text: prompt }] }]
+          })
         }
       );
 
       const data = await response.json();
-      if (data.description) {
-        setGeneratedDescription(data.description);
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (generatedText) {
+        setGeneratedDescription(generatedText);
+        setFormData(prev => ({ ...prev, description: generatedText }));
       }
     } catch (error) {
       console.error('Error generating description:', error);
@@ -233,23 +234,38 @@ export function Properties() {
     setActivePropertyId(property.id);
     setGeneratingDescription(true);
     try {
+      const prompt = `You are an expert Nigerian real estate copywriter. Write a compelling, professional property description for a listing with the following details:
+      - Title: ${property.title}
+      - Type: ${property.property_type}
+      - Location: ${property.location}, ${property.city}, ${property.state}
+      - Price: ₦${property.price}
+      - Bedrooms: ${property.bedrooms || 'N/A'}
+      - Bathrooms: ${property.bathrooms || 'N/A'}
+      - Key Features: ${property.features?.join(', ') || 'Standard Amenities'}
+      
+      Make the tone inviting and professional. Format it with a short introductory paragraph followed by a clean bulleted list of key features. Keep it under 150 words.`;
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-description`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(property),
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
         }
       );
 
       const data = await response.json();
-      if (data.description) {
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (generatedText) {
         await supabase
           .from('properties')
-          .update({ generated_description: data.description })
+          .update({ description: generatedText })
           .eq('id', property.id);
         setShowDescriptionModal(true);
-        setGeneratedDescription(data.description);
+        setGeneratedDescription(generatedText);
         fetchProperties();
       }
     } catch (error) {
