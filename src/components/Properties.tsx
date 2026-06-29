@@ -197,7 +197,7 @@ export function Properties() {
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
-        alert('Missing Gemini API Key in environment variables.');
+        alert('The AI is currently unavailable at the moment. Please enter a description manually.');
         setGeneratingDescription(false);
         return;
       }
@@ -231,14 +231,12 @@ Make it sound premium, appealing to buyers/renters, and format it cleanly with p
         const text = data.candidates[0].content.parts[0].text;
         setGeneratedDescription(text);
         setFormData(prev => ({ ...prev, description: text }));
-      } else if (data.error) {
-        alert(`Gemini API Error: ${data.error.message}`);
       } else {
-        alert('Raw Response: ' + JSON.stringify(data));
+        alert('The AI is currently unavailable at the moment. Please try again later or enter a description manually.');
       }
     } catch (error) {
       console.error('Error generating description:', error);
-      alert('AI Error: ' + (error instanceof Error ? error.message : String(error)));
+      alert('The AI is currently unavailable at the moment. Please try again later or enter a description manually.');
     }
     setGeneratingDescription(false);
   }
@@ -249,7 +247,7 @@ Make it sound premium, appealing to buyers/renters, and format it cleanly with p
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
-        alert('Missing Gemini API Key.');
+        alert('The AI is currently unavailable at the moment.');
         setGeneratingDescription(false);
         setActivePropertyId(null);
         return;
@@ -289,14 +287,12 @@ Make it sound premium and format it cleanly.`;
         setGeneratedDescription(text);
         setShowDescriptionModal(true);
         fetchProperties();
-      } else if (data.error) {
-        alert(`Gemini API Error: ${data.error.message}`);
       } else {
-        alert('Raw Response: ' + JSON.stringify(data));
+        alert('The AI is currently unavailable at the moment. Please try again later.');
       }
     } catch (error) {
       console.error('Error generating description:', error);
-      alert('AI Error: ' + (error instanceof Error ? error.message : String(error)));
+      alert('The AI is currently unavailable at the moment. Please try again later.');
     }
     setGeneratingDescription(false);
     setActivePropertyId(null);
