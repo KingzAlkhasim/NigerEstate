@@ -215,7 +215,7 @@ Amenities/Features: ${formData.features.join(', ') || 'Standard amenities'}
 Make it sound premium, appealing to buyers/renters, and format it cleanly with paragraphs or bullet points where appropriate. Keep it concise.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -226,12 +226,15 @@ Make it sound premium, appealing to buyers/renters, and format it cleanly with p
       );
 
       const data = await response.json();
+      
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
         const text = data.candidates[0].content.parts[0].text;
         setGeneratedDescription(text);
         setFormData(prev => ({ ...prev, description: text }));
+      } else if (data.error) {
+        alert(`Gemini API Error: ${data.error.message}`);
       } else {
-        alert('Failed to extract text from AI response. Check your API dashboard configurations.');
+        alert('Raw Response: ' + JSON.stringify(data));
       }
     } catch (error) {
       console.error('Error generating description:', error);
@@ -265,7 +268,7 @@ Amenities/Features: ${property.features?.join(', ') || 'Standard amenities'}
 Make it sound premium and format it cleanly.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -276,6 +279,7 @@ Make it sound premium and format it cleanly.`;
       );
 
       const data = await response.json();
+      
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
         const text = data.candidates[0].content.parts[0].text;
         await supabase
@@ -285,8 +289,10 @@ Make it sound premium and format it cleanly.`;
         setGeneratedDescription(text);
         setShowDescriptionModal(true);
         fetchProperties();
+      } else if (data.error) {
+        alert(`Gemini API Error: ${data.error.message}`);
       } else {
-        alert('Failed to extract text from AI response.');
+        alert('Raw Response: ' + JSON.stringify(data));
       }
     } catch (error) {
       console.error('Error generating description:', error);
