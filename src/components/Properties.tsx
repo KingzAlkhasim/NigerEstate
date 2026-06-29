@@ -195,37 +195,47 @@ export function Properties() {
   async function generateDescription() {
     setGeneratingDescription(true);
     try {
-      const prompt = `You are an expert Nigerian real estate copywriter. Write a compelling, professional property description for a listing with the following details:
-      - Title: ${formData.title || 'New Property'}
-      - Type: ${formData.property_type}
-      - Location: ${formData.location || 'Prime Location'}, ${formData.city}, ${formData.state}
-      - Price: ₦${parseFloat(formData.price) || 0}
-      - Bedrooms: ${formData.bedrooms || 'N/A'}
-      - Bathrooms: ${formData.bathrooms || 'N/A'}
-      - Key Features: ${formData.features.join(', ') || 'Standard Amenities'}
-      
-      Make the tone inviting and professional. Format it with a short introductory paragraph followed by a clean bulleted list of key features. Keep it under 150 words.`;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        alert('Missing Gemini API Key in environment variables.');
+        setGeneratingDescription(false);
+        return;
+      }
+
+      const promptText = `You are an expert real estate copywriter specializing in the Nigerian property market. 
+Write a compelling, professional description for a property with the following details:
+Title: ${formData.title || 'New Property'}
+Property Type: ${formData.property_type}
+Location: ${formData.location || 'Prime Location'}, ${formData.city}, ${formData.state}
+Price: ₦${(parseFloat(formData.price) || 0).toLocaleString()}
+Bedrooms: ${formData.bedrooms || 'N/A'}
+Bathrooms: ${formData.bathrooms || 'N/A'}
+Amenities/Features: ${formData.features.join(', ') || 'Standard amenities'}
+
+Make it sound premium, appealing to buyers/renters, and format it cleanly with paragraphs or bullet points where appropriate. Keep it concise.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
+            contents: [{ parts: [{ text: promptText }] }]
+          }),
         }
       );
 
       const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (generatedText) {
-        setGeneratedDescription(generatedText);
-        setFormData(prev => ({ ...prev, description: generatedText }));
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const text = data.candidates[0].content.parts[0].text;
+        setGeneratedDescription(text);
+        setFormData(prev => ({ ...prev, description: text }));
+      } else {
+        alert('Failed to extract text from AI response. Check your API dashboard configurations.');
       }
     } catch (error) {
       console.error('Error generating description:', error);
+      alert('AI Error: ' + (error instanceof Error ? error.message : String(error)));
     }
     setGeneratingDescription(false);
   }
@@ -234,42 +244,53 @@ export function Properties() {
     setActivePropertyId(property.id);
     setGeneratingDescription(true);
     try {
-      const prompt = `You are an expert Nigerian real estate copywriter. Write a compelling, professional property description for a listing with the following details:
-      - Title: ${property.title}
-      - Type: ${property.property_type}
-      - Location: ${property.location}, ${property.city}, ${property.state}
-      - Price: ₦${property.price}
-      - Bedrooms: ${property.bedrooms || 'N/A'}
-      - Bathrooms: ${property.bathrooms || 'N/A'}
-      - Key Features: ${property.features?.join(', ') || 'Standard Amenities'}
-      
-      Make the tone inviting and professional. Format it with a short introductory paragraph followed by a clean bulleted list of key features. Keep it under 150 words.`;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        alert('Missing Gemini API Key.');
+        setGeneratingDescription(false);
+        setActivePropertyId(null);
+        return;
+      }
+
+      const promptText = `You are an expert real estate copywriter specializing in the Nigerian property market. 
+Write a compelling, professional description for a property with the following details:
+Title: ${property.title}
+Property Type: ${property.property_type}
+Location: ${property.location}, ${property.city}, ${property.state}
+Price: ₦${property.price.toLocaleString()}
+Bedrooms: ${property.bedrooms || 'N/A'}
+Bathrooms: ${property.bathrooms || 'N/A'}
+Amenities/Features: ${property.features?.join(', ') || 'Standard amenities'}
+
+Make it sound premium and format it cleanly.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
+            contents: [{ parts: [{ text: promptText }] }]
+          }),
         }
       );
 
       const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (generatedText) {
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const text = data.candidates[0].content.parts[0].text;
         await supabase
           .from('properties')
-          .update({ description: generatedText })
+          .update({ description: text })
           .eq('id', property.id);
+        setGeneratedDescription(text);
         setShowDescriptionModal(true);
-        setGeneratedDescription(generatedText);
         fetchProperties();
+      } else {
+        alert('Failed to extract text from AI response.');
       }
     } catch (error) {
       console.error('Error generating description:', error);
+      alert('AI Error: ' + (error instanceof Error ? error.message : String(error)));
     }
     setGeneratingDescription(false);
     setActivePropertyId(null);
